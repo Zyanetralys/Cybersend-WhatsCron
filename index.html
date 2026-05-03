@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CYBERSEND // WhatsApp Scheduler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00ff41;
+    --green-dim: #00cc33;
+    --green-dark: #003d10;
+    --green-glow: rgba(0,255,65,0.15);
+    --cyan: #00ffff;
+    --cyan-dim: #00cccc;
+    --red: #ff0040;
+    --amber: #ffb000;
+    --bg: #000d02;
+    --bg2: #010f04;
+    --border: rgba(0,255,65,0.3);
+    --border-bright: rgba(0,255,65,0.7);
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-hud: 'Orbitron', monospace;
+    --font-crt: 'VT323', monospace;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html, body {
+    height:100%;
+    background: var(--bg);
+    color: var(--green);
+    font-family: var(--font-mono);
+    overflow-x: hidden;
+  }
+
+  /* Matrix rain canvas */
+  #matrix-bg {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    z-index: 0; opacity: 0.07; pointer-events: none;
+  }
+
+  /* Scanlines overlay */
+  body::after {
+    content:'';
+    position: fixed; top:0; left:0; right:0; bottom:0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none; z-index: 9999;
+  }
+
+  /* CRT vignette */
+  body::before {
+    content:'';
+    position: fixed; top:0; left:0; right:0; bottom:0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.8) 100%);
+    pointer-events: none; z-index: 9998;
+  }
+
+  #app { position:relative; z-index:1; min-height:100vh; }
+
+  /* ── HEADER ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(0,10,3,0.9);
+    backdrop-filter: blur(4px);
+    position: sticky; top:0; z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--font-hud);
+    font-size: 20px; font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--green);
+    text-shadow: 0 0 20px var(--green), 0 0 40px rgba(0,255,65,0.4);
+  }
+
+  .logo span { color: var(--cyan); }
+
+  .header-status {
+    display: flex; align-items: center; gap: 16px;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--green-dim);
+    letter-spacing: 1px;
+  }
+
+  .clock {
+    font-family: var(--font-hud); font-size: 13px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+  }
+
+  .sys-indicator {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.5s infinite;
+  }
+  .dot.red { background: var(--red); animation: none; }
+  .dot.amber { background: var(--amber); }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; box-shadow: 0 0 4px var(--green); }
+    50% { opacity:0.4; box-shadow: none; }
+  }
+
+  /* ── LAYOUT ── */
+  .main {
+    display: grid;
+    grid-template-columns: 280px 1fr 300px;
+    gap: 0;
+    height: calc(100vh - 57px);
+  }
+
+  .panel {
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--green-dark) transparent;
+  }
+  .panel:last-child { border-right: none; border-left: 1px solid var(--border); }
+
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-hud); font-size: 10px;
+    letter-spacing: 3px; color: var(--green-dim);
+    text-transform: uppercase;
+    background: rgba(0,255,65,0.03);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .panel-header::before {
+    content: '▶'; font-size: 8px; color: var(--green);
+  }
+
+  /* ── SESSION PANEL ── */
+  .session-panel { padding: 16px; }
+
+  .qr-frame {
+    width: 100%; aspect-ratio: 1;
+    border: 1px solid var(--border-bright);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    position: relative;
+    background: var(--bg2);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .qr-frame::before, .qr-frame::after {
+    content:''; position:absolute;
+    width: 16px; height: 16px;
+    border-color: var(--green); border-style: solid;
+  }
+  .qr-frame::before { top:4px; left:4px; border-width: 2px 0 0 2px; }
+  .qr-frame::after  { bottom:4px; right:4px; border-width: 0 2px 2px 0; }
+
+  #qr-canvas {
+    width: 180px; height: 180px;
+    image-rendering: pixelated;
+  }
+
+  .qr-scan-line {
+    position: absolute;
+    left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    animation: scan 2s linear infinite;
+    box-shadow: 0 0 8px var(--green);
+  }
+  @keyframes scan {
+    0% { top: 0; } 100% { top: 100%; }
+  }
+
+  .session-status {
+    text-align: center; padding: 8px;
+    font-family: var(--font-crt); font-size: 18px;
+    letter-spacing: 2px;
+  }
+
+  .status-connected { color: var(--green); text-shadow: 0 0 10px var(--green); }
+  .status-pending { color: var(--amber); }
+  .status-disconnected { color: var(--red); }
+
+  .session-info {
+    margin-top: 12px;
+    font-size: 11px; color: var(--green-dim);
+    line-height: 1.8;
+  }
+
+  .session-info span { color: var(--green); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: block; width: 100%;
+    padding: 10px 16px;
+    border: 1px solid var(--green);
+    background: transparent;
+    color: var(--green);
+    font-family: var(--font-hud); font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative; overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .btn::before {
+    content:'';
+    position:absolute; top:0; left:-100%; width:100%; height:100%;
+    background: linear-gradient(90deg, transparent, rgba(0,255,65,0.1), transparent);
+    transition: left 0.3s;
+  }
+
+  .btn:hover { background: var(--green-glow); box-shadow: 0 0 12px rgba(0,255,65,0.3); }
+  .btn:hover::before { left: 100%; }
+  .btn:active { transform: scale(0.98); }
+
+  .btn-cyan { border-color: var(--cyan); color: var(--cyan); }
+  .btn-cyan:hover { background: rgba(0,255,255,0.05); box-shadow: 0 0 12px rgba(0,255,255,0.2); }
+
+  .btn-red { border-color: var(--red); color: var(--red); }
+  .btn-red:hover { background: rgba(255,0,64,0.05); }
+
+  .btn-small {
+    display: inline-block; width: auto;
+    padding: 4px 10px; font-size: 9px;
+    margin-bottom: 0; margin-right: 4px;
+  }
+
+  /* ── COMPOSE FORM ── */
+  .compose { padding: 16px; }
+
+  .field { margin-bottom: 14px; }
+
+  label {
+    display: block; font-size: 10px;
+    letter-spacing: 2px; color: var(--green-dim);
+    text-transform: uppercase; margin-bottom: 6px;
+    font-family: var(--font-hud);
+  }
+
+  input, textarea, select {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    color: var(--green);
+    font-family: var(--font-mono); font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 8px rgba(0,255,65,0.2);
+  }
+
+  select option { background: var(--bg); }
+
+  textarea { min-height: 90px; line-height: 1.5; }
+
+  .char-count {
+    text-align: right; font-size: 10px;
+    color: var(--green-dim); margin-top: 3px;
+  }
+
+  .input-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* Phone input with flag */
+  .phone-wrap { position: relative; }
+  .phone-prefix {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 13px; color: var(--cyan); pointer-events: none;
+  }
+  .phone-wrap input { padding-left: 32px; }
+
+  /* Datetime display */
+  .datetime-display {
+    font-family: var(--font-crt); font-size: 22px;
+    color: var(--cyan); text-align: center;
+    padding: 8px; letter-spacing: 3px;
+    border: 1px solid rgba(0,255,255,0.2);
+    margin-bottom: 14px;
+    text-shadow: 0 0 10px var(--cyan);
+  }
+
+  /* ── MESSAGE LIST ── */
+  .msg-list { padding: 0; }
+
+  .msg-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(0,255,65,0.1);
+    cursor: pointer;
+    transition: background 0.1s;
+    position: relative;
+  }
+
+  .msg-item:hover { background: rgba(0,255,65,0.04); }
+
+  .msg-item::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 2px;
+  }
+
+  .msg-item.PENDING::before { background: var(--amber); }
+  .msg-item.SENT::before { background: var(--green); }
+  .msg-item.FAILED::before { background: var(--red); }
+  .msg-item.CANCELLED::before { background: #444; }
+  .msg-item.SENDING::before { background: var(--cyan); animation: pulse 0.5s infinite; }
+
+  .msg-to {
+    font-family: var(--font-hud); font-size: 11px;
+    letter-spacing: 1px; color: var(--cyan);
+    margin-bottom: 3px;
+  }
+
+  .msg-preview {
+    font-size: 12px; color: var(--green-dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+
+  .msg-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 10px; color: #444;
+  }
+
+  .badge {
+    padding: 1px 6px;
+    font-size: 9px; font-family: var(--font-hud);
+    letter-spacing: 1px;
+    border-radius: 1px;
+  }
+
+  .badge-PENDING { border: 1px solid var(--amber); color: var(--amber); }
+  .badge-SENT { border: 1px solid var(--green); color: var(--green); }
+  .badge-FAILED { border: 1px solid var(--red); color: var(--red); }
+  .badge-CANCELLED { border: 1px solid #555; color: #555; }
+  .badge-SENDING { border: 1px solid var(--cyan); color: var(--cyan); }
+
+  /* ── STATS ── */
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border);
+    margin: 16px;
+  }
+
+  .stat-cell {
+    background: var(--bg);
+    padding: 10px 12px; text-align: center;
+  }
+
+  .stat-num {
+    font-family: var(--font-hud); font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--green-dim); text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  .stat-num.green { color: var(--green); text-shadow: 0 0 8px var(--green); }
+  .stat-num.cyan { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+  .stat-num.amber { color: var(--amber); }
+  .stat-num.red { color: var(--red); }
+
+  /* ── LOG TERMINAL ── */
+  .terminal {
+    margin: 16px;
+    background: #000;
+    border: 1px solid var(--border);
+    padding: 12px;
+    height: 160px;
+    overflow-y: auto;
+    font-size: 11px; line-height: 1.8;
+    scrollbar-width: thin;
+    scrollbar-color: var(--green-dark) transparent;
+  }
+
+  .log-line { color: var(--green-dim); }
+  .log-line .ts { color: #1a6b2a; }
+  .log-line.info .msg-t { color: var(--green); }
+  .log-line.warn .msg-t { color: var(--amber); }
+  .log-line.error .msg-t { color: var(--red); }
+  .log-line.success .msg-t { color: var(--cyan); }
+
+  .terminal-cursor {
+    display: inline-block; width: 8px; height: 14px;
+    background: var(--green); vertical-align: middle;
+    animation: blink 1s step-end infinite;
+    margin-left: 2px;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ── MODAL ── */
+  .modal-bg {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+
+  .modal {
+    background: var(--bg);
+    border: 1px solid var(--border-bright);
+    box-shadow: 0 0 40px rgba(0,255,65,0.15);
+    padding: 24px; width: 420px; max-width: 95vw;
+    position: relative;
+  }
+
+  .modal-title {
+    font-family: var(--font-hud); font-size: 14px;
+    letter-spacing: 3px; color: var(--green);
+    text-transform: uppercase; margin-bottom: 20px;
+    border-bottom: 1px solid var(--border); padding-bottom: 12px;
+  }
+
+  .modal-close {
+    position: absolute; top: 16px; right: 16px;
+    background: none; border: none; color: var(--red);
+    font-size: 18px; cursor: pointer; font-family: var(--font-mono);
+  }
+
+  /* ── QR Generator ── */
+  .qr-big {
+    display: flex; justify-content: center;
+    padding: 20px;
+  }
+
+  /* ── TOAST ── */
+  .toast-wrap {
+    position: fixed; top: 70px; right: 20px;
+    z-index: 9000; display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .toast {
+    padding: 10px 16px;
+    border-left: 3px solid var(--green);
+    background: rgba(0,10,3,0.95);
+    font-size: 12px; letter-spacing: 1px;
+    animation: slideIn 0.2s ease, fadeOut 0.3s ease 2.7s forwards;
+    max-width: 280px;
+  }
+  .toast.error { border-color: var(--red); color: var(--red); }
+  .toast.warn { border-color: var(--amber); color: var(--amber); }
+
+  @keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+  @keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
+
+  /* ── GLITCH TEXT ── */
+  .glitch {
+    position: relative;
+    animation: glitch-base 4s infinite;
+  }
+  @keyframes glitch-base {
+    0%,90%,100% { text-shadow: 0 0 20px var(--green); }
+    92% { text-shadow: -2px 0 var(--red), 2px 0 var(--cyan); }
+    94% { text-shadow: 2px 0 var(--red), -2px 0 var(--cyan); }
+    96% { text-shadow: 0 0 20px var(--green); }
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    height: 2px;
+    background: var(--green-dark);
+    margin: 8px 0;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    transition: width 0.3s;
+  }
+
+  /* ── CONNECTION WIZARD ── */
+  .wizard-step { display: none; }
+  .wizard-step.active { display: block; }
+
+  .wizard-steps-indicator {
+    display: flex; gap: 4px; margin-bottom: 20px;
+  }
+  .step-dot {
+    flex: 1; height: 2px;
+    background: var(--green-dark);
+    transition: background 0.3s;
+  }
+  .step-dot.done { background: var(--green); }
+  .step-dot.active { background: var(--cyan); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center; padding: 40px 20px;
+    color: var(--green-dark);
+  }
+  .empty-state .icon {
+    font-size: 40px; margin-bottom: 12px;
+    font-family: var(--font-crt);
+  }
+  .empty-state p { font-size: 12px; letter-spacing: 2px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--green-dark); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; grid-template-rows: auto; height: auto; }
+    .panel { border-right: none; border-bottom: 1px solid var(--border); }
+    .panel:last-child { border-left: none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="matrix-bg"></canvas>
+<div class="toast-wrap" id="toasts"></div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo glitch">CYBER<span>SEND</span></div>
+    <div class="header-status">
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="sys-indicator" id="conn-indicator">
+        <span class="dot red" id="conn-dot"></span>
+        <span id="conn-text">DISCONNECTED</span>
+      </div>
+      <div class="sys-indicator">
+        <span class="dot"></span>
+        SYS ONLINE
+      </div>
+    </div>
+  </header>
+
+  <div class="main">
+
+    <!-- LEFT: SESSION PANEL -->
+    <div class="panel">
+      <div class="panel-header">WhatsApp Session</div>
+      <div class="session-panel">
+
+        <div class="qr-frame" id="qr-frame">
+          <canvas id="qr-canvas" width="180" height="180"></canvas>
+          <div class="qr-scan-line" id="qr-scan-line" style="display:none"></div>
+          <div id="qr-placeholder" style="text-align:center; color:var(--green-dark); font-size:12px; letter-spacing:2px;">
+            <div style="font-family:var(--font-crt);font-size:40px;margin-bottom:8px;color:#1a4d25">◈</div>
+            QR PENDING
+          </div>
+        </div>
+
+        <div class="session-status status-disconnected" id="sess-status-text">
+          ● DISCONNECTED
+        </div>
+
+        <div class="session-info" id="sess-info">
+          <div>STATUS: <span id="si-status">OFFLINE</span></div>
+          <div>PHONE: <span id="si-phone">—</span></div>
+          <div>CONNECTED: <span id="si-connected">—</span></div>
+        </div>
+
+        <div style="margin-top:16px">
+          <button class="btn btn-cyan" id="btn-connect" onclick="openConnectModal()">
+            ▶ CONNECT WHATSAPP
+          </button>
+          <button class="btn btn-red" id="btn-disconnect" onclick="disconnectSession()" style="display:none">
+            ■ DISCONNECT
+          </button>
+          <button class="btn" onclick="openSimModal()" id="btn-simulate" style="font-size:9px;color:var(--green-dim);border-color:rgba(0,255,65,0.2)">
+            ⚡ SIMULATE CONNECTION (DEMO)
+          </button>
+        </div>
+
+        <!-- STATS -->
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-cell">
+            <div class="stat-num green" id="stat-total">0</div>
+            <div class="stat-label">Total</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-num amber" id="stat-pending">0</div>
+            <div class="stat-label">Pending</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-num cyan" id="stat-sent">0</div>
+            <div class="stat-label">Sent</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-num red" id="stat-failed">0</div>
+            <div class="stat-label">Failed</div>
+          </div>
+        </div>
+
+        <!-- TERMINAL LOG -->
+        <div class="panel-header" style="margin-top:8px">System Log</div>
+        <div class="terminal" id="terminal">
+          <div class="log-line info">
+            <span class="ts">[BOOT]</span>
+            <span class="msg-t"> CyberSend v1.0 initialized</span>
+          </div>
+          <div class="log-line info">
+            <span class="ts">[SYS] </span>
+            <span class="msg-t"> Awaiting WhatsApp connection...</span>
+          </div>
+          <span class="terminal-cursor"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: COMPOSE + LIST -->
+    <div class="panel" style="border-right:none; overflow-y:auto">
+      <div class="panel-header">Compose Transmission</div>
+      <div class="compose">
+
+        <div class="datetime-display" id="live-datetime">---- -- -- / --:--:--</div>
+
+        <div class="input-row">
+          <div class="field">
+            <label>Contact Name</label>
+            <input type="text" id="f-name" placeholder="Agent X" maxlength="50">
+          </div>
+          <div class="field">
+            <label>Phone Number</label>
+            <div class="phone-wrap">
+              <span class="phone-prefix">+</span>
+              <input type="tel" id="f-phone" placeholder="34612345678" maxlength="20">
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Message Content</label>
+          <textarea id="f-msg" placeholder="Enter your encrypted message..." maxlength="4096" oninput="updateCharCount()"></textarea>
+          <div class="char-count"><span id="char-count">0</span>/4096</div>
+        </div>
+
+        <div class="input-row">
+          <div class="field">
+            <label>Schedule Date/Time</label>
+            <input type="datetime-local" id="f-datetime">
+          </div>
+          <div class="field">
+            <label>Recurrence</label>
+            <select id="f-recurrence">
+              <option value="NONE">[ NONE ]</option>
+              <option value="DAILY">DAILY</option>
+              <option value="WEEKLY">WEEKLY</option>
+              <option value="MONTHLY">MONTHLY</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Timezone</label>
+          <select id="f-timezone"></select>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+          <button class="btn" onclick="scheduleMessage()">
+            ◈ SCHEDULE
+          </button>
+          <button class="btn btn-cyan" onclick="sendNowDirect()">
+            ⚡ SEND NOW
+          </button>
+        </div>
+
+        <div id="wa-link-bar" style="display:none;margin-top:10px;padding:8px;border:1px solid rgba(0,255,65,0.2);font-size:11px">
+          <div style="color:var(--amber);margin-bottom:6px;letter-spacing:1px">▲ FALLBACK: Open in WhatsApp</div>
+          <a id="wa-link-url" href="#" target="_blank" class="btn btn-cyan" style="display:inline-block;width:auto;text-decoration:none;font-size:10px">
+            OPEN WHATSAPP WEB ↗
+          </a>
+        </div>
+      </div>
+
+      <!-- MESSAGE LIST -->
+      <div class="panel-header">Transmission Queue</div>
+      <div class="msg-list" id="msg-list">
+        <div class="empty-state">
+          <div class="icon">◈</div>
+          <p>NO TRANSMISSIONS QUEUED</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: DETAIL / INFO PANEL -->
+    <div class="panel">
+      <div class="panel-header">Mission Control</div>
+      <div style="padding:16px">
+
+        <!-- Selected message detail -->
+        <div id="detail-panel">
+          <div class="empty-state" style="padding:20px 10px">
+            <div class="icon" style="font-size:30px">⊙</div>
+            <p style="font-size:10px">SELECT A TRANSMISSION<br>TO VIEW DETAILS</p>
+          </div>
+        </div>
+
+        <!-- Quick Send -->
+        <div class="panel-header" style="margin:16px -16px 12px;padding-left:16px">Quick Transmit</div>
+        <div class="field">
+          <label>Direct Number</label>
+          <div class="phone-wrap">
+            <span class="phone-prefix">+</span>
+            <input type="tel" id="q-phone" placeholder="34612345678">
+          </div>
+        </div>
+        <div class="field">
+          <label>Message</label>
+          <textarea id="q-msg" style="min-height:70px" placeholder="Quick message..."></textarea>
+        </div>
+        <button class="btn btn-cyan" onclick="quickSend()" style="margin-bottom:8px">
+          ⚡ TRANSMIT NOW
+        </button>
+
+        <!-- Location info -->
+        <div class="panel-header" style="margin:16px -16px 12px;padding-left:16px">Location Data</div>
+        <div id="location-info" style="font-size:11px;line-height:2;color:var(--green-dim);padding:0 4px">
+          <div>LAT: <span id="loc-lat" style="color:var(--green)">—</span></div>
+          <div>LON: <span id="loc-lon" style="color:var(--green)">—</span></div>
+          <div>TZ: <span id="loc-tz" style="color:var(--cyan)">—</span></div>
+          <div>IP: <span id="loc-ip" style="color:var(--green-dim)">—</span></div>
+        </div>
+        <button class="btn" onclick="getLocation()" style="margin-top:10px;font-size:9px">
+          ◎ ACQUIRE LOCATION
+        </button>
+
+        <!-- API Config -->
+        <div class="panel-header" style="margin:16px -16px 12px;padding-left:16px">Backend Config</div>
+        <div class="field">
+          <label>API Endpoint</label>
+          <input type="url" id="api-url" value="http://localhost:8080" placeholder="http://localhost:8080">
+        </div>
+        <button class="btn" onclick="testConnection()" style="font-size:9px">
+          ◈ TEST CONNECTION
+        </button>
+        <div id="api-status" style="font-size:10px;margin-top:6px;color:var(--green-dim)"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONNECT MODAL -->
+<div class="modal-bg" id="modal-connect">
+  <div class="modal">
+    <div class="modal-title">⊙ WhatsApp Connection Protocol</div>
+    <button class="modal-close" onclick="closeModal('modal-connect')">✕</button>
+
+    <div class="wizard-steps-indicator">
+      <div class="step-dot active" id="step-dot-1"></div>
+      <div class="step-dot" id="step-dot-2"></div>
+      <div class="step-dot" id="step-dot-3"></div>
+    </div>
+
+    <!-- Step 1: Instructions -->
+    <div class="wizard-step active" id="wizard-step-1">
+      <div style="font-size:12px;line-height:2;color:var(--green-dim);margin-bottom:20px">
+        <div style="color:var(--cyan);font-family:var(--font-hud);font-size:10px;letter-spacing:2px;margin-bottom:12px">PROTOCOL OVERVIEW</div>
+        <div>1. Start the Java backend server</div>
+        <div>2. Scan QR code with WhatsApp on your phone</div>
+        <div>3. Messages will auto-send via WhatsApp Web</div>
+        <div style="margin-top:12px;color:var(--amber);font-size:11px">
+          ▲ Without backend: use FALLBACK mode<br>
+          &nbsp;&nbsp;&nbsp;(opens WhatsApp Web directly)
+        </div>
+      </div>
+      <button class="btn btn-cyan" onclick="wizardNext(2)">INITIALIZE CONNECTION ▶</button>
+      <button class="btn" onclick="wizardNext(3);initQR()" style="margin-top:4px">▶ GENERATE QR (DEMO)</button>
+    </div>
+
+    <!-- Step 2: QR waiting -->
+    <div class="wizard-step" id="wizard-step-2">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-family:var(--font-hud);font-size:10px;letter-spacing:2px;color:var(--amber);margin-bottom:12px">
+          CONNECTING TO BACKEND...
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="connect-progress" style="width:0%"></div></div>
+        <div id="connect-log" style="font-size:11px;color:var(--green-dim);margin-top:8px;height:60px;overflow:hidden"></div>
+      </div>
+      <button class="btn" onclick="wizardNext(3);initQR()" style="margin-top:8px">SHOW QR CODE</button>
+    </div>
+
+    <!-- Step 3: QR Display -->
+    <div class="wizard-step" id="wizard-step-3">
+      <div class="qr-big">
+        <canvas id="modal-qr" width="200" height="200"></canvas>
+      </div>
+      <div style="text-align:center;font-family:var(--font-crt);font-size:16px;color:var(--amber);margin-bottom:16px;letter-spacing:2px">
+        SCAN WITH WHATSAPP → LINKED DEVICES
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn" onclick="manualConfirm()">✓ I SCANNED IT</button>
+        <button class="btn btn-red" onclick="closeModal('modal-connect')">✕ CANCEL</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SIMULATE MODAL -->
+<div class="modal-bg" id="modal-simulate">
+  <div class="modal">
+    <div class="modal-title">⚡ Demo Mode — Simulate Connection</div>
+    <button class="modal-close" onclick="closeModal('modal-simulate')">✕</button>
+    <div style="font-size:12px;color:var(--green-dim);margin-bottom:16px;line-height:2">
+      Simulate a connected WhatsApp session for demo purposes.<br>
+      Messages will use <span style="color:var(--cyan)">wa.me fallback links</span>.
+    </div>
+    <div class="field">
+      <label>Your WhatsApp Number</label>
+      <div class="phone-wrap">
+        <span class="phone-prefix">+</span>
+        <input type="tel" id="sim-phone" placeholder="34612345678" value="34600000000">
+      </div>
+    </div>
+    <button class="btn btn-cyan" onclick="simulateConnect()">⚡ ACTIVATE DEMO SESSION</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// MATRIX RAIN
+// ══════════════════════════════════════════════════════════
+(function(){
+  const c = document.getElementById('matrix-bg');
+  const ctx = c.getContext('2d');
+  let W, H, cols, drops;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()アイウエオカキクケコサシスセソ';
+
+  function resize(){
+    W = c.width = window.innerWidth;
+    H = c.height = window.innerHeight;
+    cols = Math.floor(W / 16);
+    drops = new Array(cols).fill(1);
+  }
+
+  function draw(){
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#00ff41';
+    ctx.font = '14px Share Tech Mono';
+    for(let i=0; i<cols; i++){
+      const c2 = chars[Math.floor(Math.random()*chars.length)];
+      ctx.fillStyle = Math.random() > 0.95 ? '#ffffff' : '#00ff41';
+      ctx.fillText(c2, i*16, drops[i]*16);
+      if(drops[i]*16 > H && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  setInterval(draw, 50);
+})();
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let state = {
+  session: { status: 'DISCONNECTED', phoneNumber: null, connectedAt: null },
+  messages: [],
+  selectedId: null,
+  apiBase: 'http://localhost:8080',
+  useBackend: false
+};
+
+// ══════════════════════════════════════════════════════════
+// CLOCK + DATETIME
+// ══════════════════════════════════════════════════════════
+function updateClock(){
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('en-GB', {hour12:false});
+  document.getElementById('live-datetime').textContent =
+    now.getFullYear() + '.' +
+    String(now.getMonth()+1).padStart(2,'0') + '.' +
+    String(now.getDate()).padStart(2,'0') + ' / ' +
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0') + ':' +
+    String(now.getSeconds()).padStart(2,'0');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Set default datetime to +5min
+(function(){
+  const d = new Date(Date.now() + 5*60000);
+  const local = new Date(d.getTime() - d.getTimezoneOffset()*60000)
+    .toISOString().slice(0,16);
+  document.getElementById('f-datetime').value = local;
+})();
+
+// Populate timezones
+(function(){
+  const tz = document.getElementById('f-timezone');
+  const zones = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') :
+    ['UTC','Europe/Madrid','America/New_York','America/Los_Angeles','Asia/Tokyo'];
+  const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  zones.forEach(z => {
+    const opt = document.createElement('option');
+    opt.value = z; opt.textContent = z;
+    if(z === local) opt.selected = true;
+    tz.appendChild(opt);
+  });
+})();
+
+// ══════════════════════════════════════════════════════════
+// LOG TERMINAL
+// ══════════════════════════════════════════════════════════
+function log(msg, type='info'){
+  const t = document.getElementById('terminal');
+  const cursor = t.querySelector('.terminal-cursor');
+  const d = document.createElement('div');
+  d.className = `log-line ${type}`;
+  const now = new Date();
+  const ts = String(now.getHours()).padStart(2,'0') + ':' +
+             String(now.getMinutes()).padStart(2,'0') + ':' +
+             String(now.getSeconds()).padStart(2,'0');
+  d.innerHTML = `<span class="ts">[${ts}]</span> <span class="msg-t">${msg}</span>`;
+  t.insertBefore(d, cursor);
+  t.scrollTop = t.scrollHeight;
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+function toast(msg, type=''){
+  const wrap = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ══════════════════════════════════════════════════════════
+// SESSION UI
+// ══════════════════════════════════════════════════════════
+function updateSessionUI(sess){
+  state.session = sess;
+  const st = sess.status;
+  const txt = document.getElementById('sess-status-text');
+  const dot = document.getElementById('conn-dot');
+  const connTxt = document.getElementById('conn-text');
+
+  document.getElementById('si-status').textContent = st;
+  document.getElementById('si-phone').textContent = sess.phoneNumber || '—';
+  document.getElementById('si-connected').textContent = sess.connectedAt ?
+    new Date(sess.connectedAt).toLocaleString() : '—';
+
+  txt.className = 'session-status';
+  if(st === 'CONNECTED'){
+    txt.classList.add('status-connected');
+    txt.textContent = '● CONNECTED';
+    dot.className = 'dot';
+    connTxt.textContent = 'CONNECTED';
+    document.getElementById('btn-connect').style.display = 'none';
+    document.getElementById('btn-disconnect').style.display = 'block';
+  } else if(st === 'QR_PENDING'){
+    txt.classList.add('status-pending');
+    txt.textContent = '◉ QR PENDING';
+    dot.className = 'dot amber';
+    connTxt.textContent = 'QR PENDING';
+    document.getElementById('btn-connect').style.display = 'block';
+    document.getElementById('btn-disconnect').style.display = 'none';
+  } else {
+    txt.classList.add('status-disconnected');
+    txt.textContent = '● DISCONNECTED';
+    dot.className = 'dot red';
+    connTxt.textContent = 'DISCONNECTED';
+    document.getElementById('btn-connect').style.display = 'block';
+    document.getElementById('btn-disconnect').style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// QR CODE GENERATOR (pure canvas, no library)
+// ══════════════════════════════════════════════════════════
+function drawFakeQR(canvasId, data){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+  const cells = 25;
+  const cellSize = size / cells;
+
+  ctx.fillStyle = '#000d02';
+  ctx.fillRect(0, 0, size, size);
+
+  // Generate deterministic pattern from data
+  let seed = 0;
+  for(let i=0; i<data.length; i++) seed = (seed * 31 + data.charCodeAt(i)) & 0xffffffff;
+
+  function rand(){ seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed>>>0)/0xffffffff; }
+
+  for(let r=0; r<cells; r++){
+    for(let c=0; c<cells; c++){
+      const isCorner = (
+        (r<7 && c<7) || (r<7 && c>=cells-7) || (r>=cells-7 && c<7)
+      );
+      const isTiming = (r===6 || c===6);
+
+      let fill = false;
+      if(isCorner){
+        if(r===0||r===6||c===0||c===6||
+           (r===cells-7||r===cells-1||c===cells-7||c===cells-1)||
+           (r>=cells-7&&r<=cells-1&&c>=0&&c<=6&&(r===cells-7||r===cells-1||c===0||c===6))){
+          fill = true;
+        }
+        if(r>=2&&r<=4&&c>=2&&c<=4) fill = true;
+        if(r>=2&&r<=4&&c>=cells-5&&c<=cells-3) fill = true;
+        if(r>=cells-5&&r<=cells-3&&c>=2&&c<=4) fill = true;
+      } else if(isTiming){
+        fill = (r+c) % 2 === 0;
+      } else {
+        fill = rand() > 0.5;
+      }
+
+      if(fill){
+        ctx.fillStyle = '#00ff41';
+        ctx.fillRect(c*cellSize, r*cellSize, cellSize-0.5, cellSize-0.5);
+      }
+    }
+  }
+
+  // Show scan line
+  const sl = document.getElementById('qr-scan-line');
+  if(sl){ sl.style.display='block'; document.getElementById('qr-placeholder').style.display='none'; }
+}
+
+function initQR(){
+  const data = 'CYBERSEND-' + Date.now();
+  drawFakeQR('modal-qr', data);
+  drawFakeQR('qr-canvas', data);
+  document.getElementById('qr-placeholder').style.display = 'none';
+  log('QR code generated — scan with WhatsApp', 'warn');
+}
+
+// ══════════════════════════════════════════════════════════
+// MESSAGES
+// ══════════════════════════════════════════════════════════
+function renderMessages(){
+  const list = document.getElementById('msg-list');
+  if(!state.messages.length){
+    list.innerHTML = `<div class="empty-state"><div class="icon">◈</div><p>NO TRANSMISSIONS QUEUED</p></div>`;
+    return;
+  }
+  list.innerHTML = state.messages.map(m => `
+    <div class="msg-item ${m.status}" onclick="selectMessage(${m.id})">
+      <div class="msg-to">
+        ${m.contactName ? m.contactName + ' — ' : ''}+${m.phoneNumber}
+        ${m.recurrence !== 'NONE' ? `<span style="color:var(--green-dim);font-size:9px">↻${m.recurrence}</span>` : ''}
+      </div>
+      <div class="msg-preview">${escHtml(m.messageContent)}</div>
+      <div class="msg-meta">
+        <span>${formatDateTime(m.scheduledAt)}</span>
+        <span class="badge badge-${m.status}">${m.status}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectMessage(id){
+  state.selectedId = id;
+  const m = state.messages.find(x => x.id === id);
+  if(!m) return;
+
+  const waLink = generateWaLink(m.phoneNumber, m.messageContent);
+
+  document.getElementById('detail-panel').innerHTML = `
+    <div style="font-family:var(--font-hud);font-size:10px;letter-spacing:2px;color:var(--cyan);margin-bottom:12px">
+      TRANSMISSION #${m.id}
+    </div>
+    <div style="font-size:11px;line-height:2.2;color:var(--green-dim);margin-bottom:12px">
+      <div>TO: <span style="color:var(--green)">+${m.phoneNumber}</span></div>
+      ${m.contactName ? `<div>NAME: <span style="color:var(--green)">${escHtml(m.contactName)}</span></div>` : ''}
+      <div>SCHED: <span style="color:var(--cyan)">${formatDateTime(m.scheduledAt)}</span></div>
+      <div>STATUS: <span class="badge badge-${m.status}">${m.status}</span></div>
+      ${m.recurrence !== 'NONE' ? `<div>RECUR: <span style="color:var(--amber)">${m.recurrence}</span></div>` : ''}
+    </div>
+    <div style="border:1px solid var(--border);padding:8px;font-size:12px;margin-bottom:12px;background:var(--bg2)">
+      ${escHtml(m.messageContent)}
+    </div>
+    ${m.status==='PENDING' ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+      <button class="btn btn-cyan btn-small" style="width:100%" onclick="sendNowLocal(${m.id})">⚡ NOW</button>
+      <button class="btn btn-red btn-small" style="width:100%" onclick="cancelMsg(${m.id})">✕ CANCEL</button>
+    </div>` : ''}
+    <a href="${waLink}" target="_blank" class="btn btn-cyan" style="display:block;text-decoration:none;font-size:9px;text-align:center">
+      OPEN IN WHATSAPP ↗
+    </a>
+  `;
+}
+
+function generateWaLink(phone, msg){
+  const p = phone.replace(/[^0-9]/g,'');
+  return `https://wa.me/${p}?text=${encodeURIComponent(msg)}`;
+}
+
+// ══════════════════════════════════════════════════════════
+// SCHEDULE / SEND
+// ══════════════════════════════════════════════════════════
+function scheduleMessage(){
+  const phone = document.getElementById('f-phone').value.trim();
+  const msg = document.getElementById('f-msg').value.trim();
+  const dt = document.getElementById('f-datetime').value;
+  const name = document.getElementById('f-name').value.trim();
+  const recur = document.getElementById('f-recurrence').value;
+  const tz = document.getElementById('f-timezone').value;
+
+  if(!phone){ toast('Phone number required','error'); return; }
+  if(!msg){ toast('Message content required','error'); return; }
+  if(!dt){ toast('Schedule time required','error'); return; }
+
+  const newMsg = {
+    id: Date.now(),
+    phoneNumber: phone,
+    messageContent: msg,
+    contactName: name,
+    scheduledAt: dt,
+    recurrence: recur,
+    timezone: tz,
+    status: 'PENDING',
+    createdAt: new Date().toISOString()
+  };
+
+  if(state.useBackend){
+    createMessageBackend(newMsg);
+  } else {
+    state.messages.unshift(newMsg);
+    renderMessages();
+    updateStats();
+    log(`Message scheduled → +${phone} at ${dt}`, 'success');
+    toast('⊙ Transmission scheduled');
+    scheduleLocalCheck();
+    clearForm();
+  }
+}
+
+function sendNowDirect(){
+  const phone = document.getElementById('f-phone').value.trim();
+  const msg = document.getElementById('f-msg').value.trim();
+  if(!phone){ toast('Phone number required','error'); return; }
+  if(!msg){ toast('Message content required','error'); return; }
+
+  openWaLink(phone, msg);
+}
+
+function sendNowLocal(id){
+  const m = state.messages.find(x => x.id === id);
+  if(!m) return;
+  openWaLink(m.phoneNumber, m.messageContent);
+  m.status = 'SENT';
+  m.sentAt = new Date().toISOString();
+  renderMessages();
+  updateStats();
+  log(`Sent #${id} via WhatsApp Web`, 'success');
+  toast('⚡ Opened in WhatsApp');
+}
+
+function quickSend(){
+  const phone = document.getElementById('q-phone').value.trim();
+  const msg = document.getElementById('q-msg').value.trim();
+  if(!phone || !msg){ toast('Phone and message required','error'); return; }
+  openWaLink(phone, msg);
+}
+
+function openWaLink(phone, msg){
+  const link = generateWaLink(phone, msg);
+  document.getElementById('wa-link-url').href = link;
+  document.getElementById('wa-link-bar').style.display = 'block';
+  window.open(link, '_blank');
+  log(`Opening WhatsApp → +${phone}`, 'success');
+}
+
+function cancelMsg(id){
+  const m = state.messages.find(x => x.id === id);
+  if(!m) return;
+  m.status = 'CANCELLED';
+  renderMessages();
+  updateStats();
+  log(`Cancelled transmission #${id}`, 'warn');
+  toast('Transmission cancelled','warn');
+  document.getElementById('detail-panel').innerHTML = `<div class="empty-state" style="padding:20px 10px"><div class="icon" style="font-size:30px">⊙</div><p style="font-size:10px">SELECT A TRANSMISSION<br>TO VIEW DETAILS</p></div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// LOCAL SCHEDULER (browser-based)
+// ══════════════════════════════════════════════════════════
+let schedulerInterval = null;
+function scheduleLocalCheck(){
+  if(schedulerInterval) return;
+  schedulerInterval = setInterval(checkDueMessages, 15000);
+}
+
+function checkDueMessages(){
+  const now = new Date();
+  state.messages.forEach(m => {
+    if(m.status === 'PENDING' && new Date(m.scheduledAt) <= now){
+      log(`AUTO: Firing scheduled message #${m.id} → +${m.phoneNumber}`, 'warn');
+      toast(`⚡ Auto-sending to +${m.phoneNumber}`, 'warn');
+      openWaLink(m.phoneNumber, m.messageContent);
+      m.status = 'SENT';
+      m.sentAt = now.toISOString();
+    }
+  });
+  renderMessages();
+  updateStats();
+}
+
+// ══════════════════════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════════════════════
+function updateStats(){
+  const msgs = state.messages;
+  document.getElementById('stat-total').textContent = msgs.length;
+  document.getElementById('stat-pending').textContent = msgs.filter(m=>m.status==='PENDING').length;
+  document.getElementById('stat-sent').textContent = msgs.filter(m=>m.status==='SENT').length;
+  document.getElementById('stat-failed').textContent = msgs.filter(m=>m.status==='FAILED').length;
+}
+
+// ══════════════════════════════════════════════════════════
+// BACKEND API
+// ══════════════════════════════════════════════════════════
+async function testConnection(){
+  const url = document.getElementById('api-url').value;
+  const st = document.getElementById('api-status');
+  st.textContent = 'Testing...';
+  state.apiBase = url;
+  try {
+    const r = await fetch(url + '/api/health', {signal: AbortSignal.timeout(3000)});
+    if(r.ok){
+      const d = await r.json();
+      st.style.color = 'var(--green)';
+      st.textContent = '✓ ONLINE — ' + d.time;
+      state.useBackend = true;
+      log('Backend connected: ' + url, 'success');
+      toast('✓ Backend online');
+      loadFromBackend();
+    } else { throw new Error(r.status); }
+  } catch(e){
+    st.style.color = 'var(--red)';
+    st.textContent = '✗ OFFLINE — ' + e.message;
+    state.useBackend = false;
+    log('Backend unreachable — using local mode', 'warn');
+  }
+}
+
+async function loadFromBackend(){
+  try {
+    const [msgs, stats, sess] = await Promise.all([
+      fetch(state.apiBase + '/api/messages').then(r=>r.json()),
+      fetch(state.apiBase + '/api/stats').then(r=>r.json()),
+      fetch(state.apiBase + '/api/session').then(r=>r.json()),
+    ]);
+    state.messages = msgs;
+    renderMessages();
+    updateSessionUI(sess);
+    log(`Loaded ${msgs.length} messages from backend`, 'success');
+  } catch(e){ log('Failed to load from backend: ' + e.message, 'error'); }
+}
+
+async function createMessageBackend(msg){
+  try {
+    const r = await fetch(state.apiBase + '/api/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(msg)
+    });
+    const saved = await r.json();
+    state.messages.unshift(saved);
+    renderMessages();
+    updateStats();
+    log(`Message #${saved.id} created on backend`, 'success');
+    toast('⊙ Transmission scheduled');
+    clearForm();
+  } catch(e){ toast('Backend error: ' + e.message, 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════
+// CONNECT WIZARD
+// ══════════════════════════════════════════════════════════
+let wizardStep = 1;
+
+function openConnectModal(){
+  wizardStep = 1;
+  document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('wizard-step-1').classList.add('active');
+  document.querySelectorAll('.step-dot').forEach((d,i) => {
+    d.classList.remove('active','done');
+    if(i===0) d.classList.add('active');
+  });
+  document.getElementById('modal-connect').classList.add('open');
+}
+
+function wizardNext(n){
+  document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('wizard-step-'+n).classList.add('active');
+  document.querySelectorAll('.step-dot').forEach((d,i) => {
+    d.classList.remove('active','done');
+    if(i < n-1) d.classList.add('done');
+    if(i === n-1) d.classList.add('active');
+  });
+  wizardStep = n;
+
+  if(n === 2){
+    animateConnecting();
+  }
+}
+
+function animateConnecting(){
+  const log2 = document.getElementById('connect-log');
+  const prog = document.getElementById('connect-progress');
+  const steps = [
+    [10, 'Initializing protocol...'],
+    [30, 'Connecting to server...'],
+    [50, 'Requesting QR session...'],
+    [70, 'Generating QR matrix...'],
+    [90, 'Ready for scan...'],
+  ];
+  let i = 0;
+  const iv = setInterval(() => {
+    if(i < steps.length){
+      prog.style.width = steps[i][0] + '%';
+      log2.innerHTML += `<div style="color:var(--green)">> ${steps[i][1]}</div>`;
+      i++;
+    } else {
+      clearInterval(iv);
+      prog.style.width = '100%';
+      setTimeout(() => wizardNext(3), 300);
+      initQR();
+    }
+  }, 400);
+}
+
+function manualConfirm(){
+  const phone = prompt('Enter your WhatsApp phone number (with country code, no +):') || '34600000000';
+  confirmSession(phone);
+  closeModal('modal-connect');
+}
+
+function confirmSession(phone){
+  updateSessionUI({ status: 'CONNECTED', phoneNumber: phone, connectedAt: new Date().toISOString() });
+  log(`WhatsApp connected: +${phone}`, 'success');
+  toast('✓ WhatsApp connected!');
+}
+
+function disconnectSession(){
+  updateSessionUI({ status: 'DISCONNECTED', phoneNumber: null, connectedAt: null });
+  log('WhatsApp session disconnected', 'warn');
+  toast('Session disconnected','warn');
+}
+
+function openSimModal(){ document.getElementById('modal-simulate').classList.add('open'); }
+
+function simulateConnect(){
+  const phone = document.getElementById('sim-phone').value.trim() || '34600000000';
+  confirmSession(phone);
+  closeModal('modal-simulate');
+  scheduleLocalCheck();
+}
+
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// Close modal on bg click
+document.querySelectorAll('.modal-bg').forEach(m => {
+  m.addEventListener('click', e => { if(e.target === m) m.classList.remove('open'); });
+});
+
+// ══════════════════════════════════════════════════════════
+// LOCATION
+// ══════════════════════════════════════════════════════════
+function getLocation(){
+  document.getElementById('loc-tz').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos => {
+      document.getElementById('loc-lat').textContent = pos.coords.latitude.toFixed(4);
+      document.getElementById('loc-lon').textContent = pos.coords.longitude.toFixed(4);
+      log(`Location acquired: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`, 'success');
+      toast('◎ Location acquired');
+    }, err => {
+      log('Location access denied', 'warn');
+      toast('Location denied','warn');
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════
+function clearForm(){
+  document.getElementById('f-phone').value = '';
+  document.getElementById('f-msg').value = '';
+  document.getElementById('f-name').value = '';
+  document.getElementById('char-count').textContent = '0';
+  const d = new Date(Date.now() + 5*60000);
+  const local = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  document.getElementById('f-datetime').value = local;
+}
+
+function updateCharCount(){
+  const v = document.getElementById('f-msg').value;
+  document.getElementById('char-count').textContent = v.length;
+}
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function formatDateTime(dt){
+  if(!dt) return '—';
+  try { return new Date(dt).toLocaleString('es-ES', {dateStyle:'short', timeStyle:'short'}); }
+  catch(e){ return dt; }
+}
+
+// ══════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if(e.ctrlKey && e.key === 'Enter'){ scheduleMessage(); }
+  if(e.ctrlKey && e.shiftKey && e.key === 'Enter'){ sendNowDirect(); }
+  if(e.key === 'Escape'){ document.querySelectorAll('.modal-bg').forEach(m=>m.classList.remove('open')); }
+});
+
+// ══════════════════════════════════════════════════════════
+// BOOT SEQUENCE
+// ══════════════════════════════════════════════════════════
+(function boot(){
+  setTimeout(()=>log('Matrix protocol engaged','success'), 300);
+  setTimeout(()=>log('Scheduler daemon running (30s interval)'), 600);
+  setTimeout(()=>log('Awaiting session authentication...','warn'), 900);
+  setTimeout(()=>log('Ctrl+Enter = Schedule | Ctrl+Shift+Enter = Send Now'), 1200);
+  updateStats();
+  scheduleLocalCheck();
+})();
+</script>
+</body>
+</html>
