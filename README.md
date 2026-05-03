@@ -1,113 +1,106 @@
-# CyberSend — WhatsApp Message Scheduler
+<h1>CyberSend — Programador de Mensajes de WhatsApp</h1>
 
-```
- ██████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗███████╗███╗   ██╗██████╗
+<pre class="ascii"> ██████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗███████╗███╗   ██╗██████╗
 ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔════╝██╔════╝████╗  ██║██╔══██╗
 ██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝███████╗█████╗  ██╔██╗ ██║██║  ██║
 ██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗╚════██║██╔══╝  ██║╚██╗██║██║  ██║
 ╚██████╗   ██║   ██████╔╝███████╗██║  ██║███████║███████╗██║ ╚████║██████╔╝
- ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚═════╝
-```
+ ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚═════╝</pre>
 
-<div align="center">
+<div class="center">
+    <span class="badge"><img src="https://img.shields.io/badge/Java-17+-ED8B00?style=flat-square&logo=openjdk&logoColor=white" alt="Java"></span>
+    <span class="badge"><img src="https://img.shields.io/badge/Spring_Boot-3.2-6DB33F?style=flat-square&logo=springboot&logoColor=white" alt="Spring Boot"></span>
+    <span class="badge"><img src="https://img.shields.io/badge/license-MIT-00ff41?style=flat-square" alt="License"></span>
+    <span class="badge"><img src="https://img.shields.io/badge/status-active-00ff41?style=flat-square" alt="Status"></span>
+    <span class="badge"><img src="https://img.shields.io/badge/GitHub_Pages-ready-181717?style=flat-square&logo=github" alt="GitHub Pages"></span>
 
-![Java](https://img.shields.io/badge/Java-17+-ED8B00?style=flat-square&logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2-6DB33F?style=flat-square&logo=springboot&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-00ff41?style=flat-square)
-![Status](https://img.shields.io/badge/status-active-00ff41?style=flat-square)
-![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-ready-181717?style=flat-square&logo=github)
+    <p><strong>Programa mensajes de WhatsApp con precisión. Sin tonterías, sin suscripciones.</strong></p>
 
-**Schedule WhatsApp messages with precision. No bullshit, no subscriptions.**
-
-[Demo](#-demo) · [Quick Start](#-quick-start) · [Architecture](#-architecture) · [API Reference](#-api-reference) · [Contributing](#-contributing)
-
+    <p>
+        <a href="#demo">Demo</a> · 
+        <a href="#inicio-rapido">Inicio Rápido</a> · 
+        <a href="#arquitectura">Arquitectura</a> · 
+        <a href="#referencia-api">Referencia API</a> · 
+        <a href="#contribuir">Contribuir</a>
+    </p>
 </div>
 
----
+<hr>
 
-## What is this?
+<h2 id="que-es-esto">¿Qué es esto?</h2>
 
-CyberSend is a self-hosted WhatsApp message scheduler. You write a message, pick a time, and it fires — automatically, via WhatsApp Web.
+<p>CyberSend es un programador de mensajes de WhatsApp autoalojado. Escribes un mensaje, eliges una hora, y se dispara — automáticamente, vía WhatsApp Web.</p>
 
-It runs in two modes:
+<p>Se ejecuta en dos modos:</p>
 
-- **Standalone HTML** — drop `index.html` anywhere, including GitHub Pages. No server, no dependencies. The browser acts as the scheduler and opens WhatsApp Web at the right time using `wa.me` deep links.
-- **Full backend (Spring Boot)** — persistent storage, REST API, real-time WebSocket updates, and a proper cron-based dispatcher. Connects to WhatsApp via session bridge or the official Business API.
+<ul>
+    <li><strong>HTML independiente</strong> — coloca <code>index.html</code> en cualquier lugar, incluyendo GitHub Pages. Sin servidor, sin dependencias. El navegador actúa como programador y abre WhatsApp Web en el momento adecuado usando enlaces profundos <code>wa.me</code>.</li>
+    <li><strong>Backend completo (Spring Boot)</strong> — almacenamiento persistente, API REST, actualizaciones WebSocket en tiempo real, y un despachador basado en cron adecuado. Se conecta a WhatsApp vía puente de sesión o la API Business oficial.</li>
+</ul>
 
-The UI is intentionally overkill: Matrix rain, CRT scanlines, glitch typography. Because why not.
+<p>La interfaz es intencionalmente exagerada: lluvia Matrix, líneas de exploración CRT, tipografía con efecto glitch. Porque ¿por qué no?</p>
 
----
+<hr>
 
-## Demo
+<h2 id="demo">Demo</h2>
 
-Open `index.html` directly in your browser. Click **SIMULATE CONNECTION (DEMO)**, schedule a message, and watch the terminal log. No installation required.
+<p>Abre <code>index.html</code> directamente en tu navegador. Haz clic en <strong>SIMULAR CONEXIÓN (DEMO)</strong>, programa un mensaje, y observa el registro de la terminal. Sin instalación requerida.</p>
 
-For GitHub Pages: push `index.html` to your repo root, enable Pages from the repo settings, done.
+<p>Para GitHub Pages: sube <code>index.html</code> a la raíz de tu repositorio, habilita Pages desde la configuración del repositorio, listo.</p>
 
----
+<hr>
 
-## Quick Start
+<h2 id="inicio-rapido">Inicio Rápido</h2>
 
-### Standalone (browser-only)
+<h3>Independiente (solo navegador)</h3>
 
-No setup. Just open the file:
+<p>Sin configuración. Solo abre el archivo:</p>
 
-```bash
-open index.html
-# or
-python3 -m http.server 3000 && open http://localhost:3000
-```
+<pre><code>open index.html
+# o
+python3 -m http.server 3000 &amp;&amp; open http://localhost:3000</code></pre>
 
-To deploy to GitHub Pages:
+<p>Para desplegar en GitHub Pages:</p>
 
-```bash
-git init
+<pre><code>git init
 git add index.html
 git commit -m "init: deploy CyberSend"
 git remote add origin https://github.com/youruser/cybersend.git
 git push -u origin main
-# Then: Settings → Pages → Deploy from branch → main → / (root)
-```
+# Luego: Settings → Pages → Deploy from branch → main → / (root)</code></pre>
 
-Your app will be live at `https://youruser.github.io/cybersend`.
+<p>Tu aplicación estará en vivo en <code>https://youruser.github.io/cybersend</code>.</p>
 
----
+<h3>Backend (Spring Boot)</h3>
 
-### Backend (Spring Boot)
+<p><strong>Requisitos:</strong> Java 17+, Maven 3.8+</p>
 
-**Requirements:** Java 17+, Maven 3.8+
-
-```bash
-git clone https://github.com/youruser/cybersend.git
+<pre><code>git clone https://github.com/youruser/cybersend.git
 cd cybersend
-mvn spring-boot:run
-```
+mvn spring-boot:run</code></pre>
 
-Server starts at `http://localhost:8080`. Open `index.html`, set the **API Endpoint** field to `http://localhost:8080`, and click **TEST CONNECTION**. The frontend will switch to backend mode automatically.
+<p>El servidor inicia en <code>http://localhost:8080</code>. Abre <code>index.html</code>, establece el campo <strong>Punto de Acceso API</strong> en <code>http://localhost:8080</code>, y haz clic en <strong>PROBAR CONEXIÓN</strong>. El frontend cambiará a modo backend automáticamente.</p>
 
-To build a fat JAR for deployment:
+<p>Para construir un JAR completo para despliegue:</p>
 
-```bash
-mvn clean package -DskipTests
-java -jar target/whatsapp-scheduler-1.0.0.jar
-```
+<pre><code>mvn clean package -DskipTests
+java -jar target/whatsapp-scheduler-1.0.0.jar</code></pre>
 
----
+<hr>
 
-## Architecture
+<h2 id="arquitectura">Arquitectura</h2>
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    index.html (Browser)                  │
+<pre class="ascii">┌─────────────────────────────────────────────────────────┐
+│                    index.html (Navegador)                │
 │                                                          │
 │  ┌────────────────┐      ┌───────────────────────────┐  │
-│  │  Local Mode    │      │      Backend Mode          │  │
-│  │  (default)     │      │                           │  │
+│  │  Modo Local    │      │      Modo Backend         │  │
+│  │  (por defecto) │      │                           │  │
 │  │                │      │  REST  ──▶  /api/*        │  │
 │  │  setInterval   │      │  WS    ──▶  /ws (STOMP)   │  │
-│  │  (15s checks)  │      │                           │  │
+│  │  (checks 15s)  │      │                           │  │
 │  │       │        │      │                           │  │
-│  │  wa.me links   │      │                           │  │
+│  │  Enlaces wa.me │      │                           │  │
 │  └────────────────┘      └───────────────────────────┘  │
 └──────────────────────────────────┬──────────────────────┘
                                    │ HTTP / WebSocket
@@ -115,81 +108,71 @@ java -jar target/whatsapp-scheduler-1.0.0.jar
                     │       Spring Boot 3.2            │
                     │                                  │
                     │  ApiController   (REST)          │
-                    │  WebSocketConfig (STOMP broker)  │
+                    │  WebSocketConfig (broker STOMP)  │
                     │  MessageSchedulerService (@Scheduled 30s) │
-                    │  WhatsAppService (session mgmt)  │
+                    │  WhatsAppService (gestión sesión)│
                     │                                  │
                     │  H2 (dev) / PostgreSQL (prod)    │
                     └──────────────┬───────────────────┘
                                    │
                     ┌──────────────▼───────────────────┐
-                    │      WhatsApp Integration        │
+                    │      Integración WhatsApp        │
                     │                                  │
-                    │  Option A: wa.me deep links      │
-                    │  Option B: whatsapp-web.js bridge│
-                    │  Option C: Business API (Meta)   │
-                    └──────────────────────────────────┘
-```
+                    │  Opción A: enlaces profundos wa.me│
+                    │  Opción B: puente whatsapp-web.js│
+                    │  Opción C: Business API (Meta)   │
+                    └──────────────────────────────────┘</pre>
 
-The backend persists messages in H2 (file-based, survives restarts). A `@Scheduled` task runs every 30 seconds, picks up any `PENDING` messages whose `scheduled_at <= NOW()`, and dispatches them. Status transitions are pushed to connected clients via STOMP WebSocket on `/topic/message-updates`.
+<p>El backend persiste los mensajes en H2 (basado en archivo, sobrevive a reinicios). Una tarea <code>@Scheduled</code> se ejecuta cada 30 segundos, recoge cualquier mensaje <code>PENDING</code> cuyo <code>scheduled_at &lt;= NOW()</code>, y los despacha. Las transiciones de estado se envían a los clientes conectados vía STOMP WebSocket en <code>/topic/message-updates</code>.</p>
 
----
+<hr>
 
-## WhatsApp Integration
+<h2 id="integracion-whatsapp">Integración con WhatsApp</h2>
 
-CyberSend supports three integration strategies, ordered by complexity:
+<p>CyberSend admite tres estrategias de integración, ordenadas por complejidad:</p>
 
-### wa.me deep links (zero setup)
+<h3>Enlaces profundos wa.me (sin configuración)</h3>
 
-The default fallback. Generates a `https://wa.me/{phone}?text={encoded}` URL and opens it in a new tab. Works on desktop and mobile. The user still needs to press Send manually — but combined with the scheduler, it opens WhatsApp Web at exactly the right moment.
+<p>La opción de respaldo por defecto. Genera una URL <code>https://wa.me/{phone}?text={encoded}</code> y la abre en una nueva pestaña. Funciona en escritorio y móvil. El usuario aún necesita presionar Enviar manualmente — pero combinado con el programador, abre WhatsApp Web en el momento exacto.</p>
 
-No credentials, no API keys, no session management.
+<p>Sin credenciales, sin claves API, sin gestión de sesión.</p>
 
-### whatsapp-web.js bridge (recommended for full automation)
+<h3>Puente whatsapp-web.js (recomendado para automatización completa)</h3>
 
-Run a small Node.js sidecar that wraps [whatsapp-web.js](https://github.com/pedroslopez/whatsapp-web.js) and exposes a local REST endpoint. The Java service calls that endpoint to send messages without any user interaction.
+<p>Ejecuta un pequeño acompañante Node.js que envuelve <a href="https://github.com/pedroslopez/whatsapp-web.js">whatsapp-web.js</a> y expone un endpoint REST local. El servicio Java llama a ese endpoint para enviar mensajes sin ninguna interacción del usuario.</p>
 
-```bash
-cd bridge
+<pre><code>cd bridge
 npm install
 node server.js
-# Scan the QR code once — session is persisted to .wwebjs_auth/
-```
+# Escanea el código QR una vez — la sesión se persiste en .wwebjs_auth/</code></pre>
 
-The bridge exposes `POST /send` with `{ phone, message }`. Edit `WhatsAppService.java` to point at it:
+<p>El puente expone <code>POST /send</code> con <code>{ phone, message }</code>. Edita <code>WhatsAppService.java</code> para apuntar a él:</p>
 
-```java
-// WhatsAppService.java — callNodeBridge()
+<pre><code class="language-java">// WhatsAppService.java — callNodeBridge()
 String url = "http://localhost:3001/send";
 RestTemplate rt = new RestTemplate();
-rt.postForEntity(url, Map.of("phone", phoneNumber, "message", message), String.class);
-```
+rt.postForEntity(url, Map.of("phone", phoneNumber, "message", message), String.class);</code></pre>
 
-### WhatsApp Business API (production / high volume)
+<h3>API Business de WhatsApp (producción / alto volumen)</h3>
 
-Requires a verified Meta Business account and a registered phone number. Set your token as an env variable and uncomment the relevant block in `WhatsAppService.java`:
+<p>Requiere una cuenta Meta Business verificada y un número de teléfono registrado. Establece tu token como variable de entorno y descomenta el bloque relevante en <code>WhatsAppService.java</code>:</p>
 
-```bash
-export WHATSAPP_BUSINESS_TOKEN=your_token_here
-export WHATSAPP_PHONE_NUMBER_ID=your_number_id
-```
+<pre><code>export WHATSAPP_BUSINESS_TOKEN=your_token_here
+export WHATSAPP_PHONE_NUMBER_ID=your_number_id</code></pre>
 
-```java
-// WhatsAppService.java
+<pre><code class="language-java">// WhatsAppService.java
 String url = "https://graph.facebook.com/v18.0/" + phoneNumberId + "/messages";
-// ... standard Business API payload
-```
+// ... payload estándar de Business API</code></pre>
 
-Rate limits and pricing apply — check [Meta's documentation](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started).
+<p>Se aplican límites de tasa y precios — consulta <a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started">la documentación de Meta</a>.</p>
 
----
+<hr>
 
-## Project Structure
+<h2 id="estructura-proyecto">Estructura del Proyecto</h2>
 
-```
-cybersend/
+<pre class="ascii">cybersend/
 │
-├── index.html                              # Standalone frontend — deploy this to GitHub Pages
+├── index.html                              # Frontend independiente — despliega esto en GitHub Pages
 ├── pom.xml
 ├── README.md
 │
@@ -197,169 +180,185 @@ cybersend/
     ├── main/
     │   ├── java/com/whatsapp/scheduler/
     │   │   │
-    │   │   ├── WhatsAppSchedulerApplication.java   # Entry point, @EnableScheduling
+    │   │   ├── WhatsAppSchedulerApplication.java   # Punto de entrada, @EnableScheduling
     │   │   │
     │   │   ├── controller/
-    │   │   │   └── ApiController.java              # All REST endpoints, CORS configured
+    │   │   │   └── ApiController.java              # Todos los endpoints REST, CORS configurado
     │   │   │
     │   │   ├── service/
-    │   │   │   ├── WhatsAppService.java            # Session lifecycle, QR, send logic
-    │   │   │   └── MessageSchedulerService.java    # @Scheduled dispatcher, recurrence
+    │   │   │   ├── WhatsAppService.java            # Ciclo de vida sesión, QR, lógica envío
+    │   │   │   └── MessageSchedulerService.java    # Despachador @Scheduled, recurrencia
     │   │   │
     │   │   ├── model/
-    │   │   │   ├── ScheduledMessage.java           # JPA entity (status, recurrence, timezone)
-    │   │   │   ├── WhatsAppSession.java            # Session entity (QR, status, phone)
-    │   │   │   ├── ScheduledMessageRepository.java # Custom @Query for due messages
+    │   │   │   ├── ScheduledMessage.java           # Entidad JPA (estado, recurrencia, zona horaria)
+    │   │   │   ├── WhatsAppSession.java            # Entidad sesión (QR, estado, teléfono)
+    │   │   │   ├── ScheduledMessageRepository.java # @Query personalizado para mensajes pendientes
     │   │   │   └── WhatsAppSessionRepository.java
     │   │   │
     │   │   └── config/
-    │   │       └── WebSocketConfig.java            # STOMP broker, /ws endpoint, SockJS
+    │   │       └── WebSocketConfig.java            # Broker STOMP, endpoint /ws, SockJS
     │   │
     │   └── resources/
-    │       └── application.properties             # H2, JPA, server config
+    │       └── application.properties             # H2, JPA, configuración servidor
     │
     └── test/
-        └── java/                                  # (add your tests here)
-```
+        └── java/                                  # (añade tus tests aquí)</code></pre>
 
----
+<hr>
 
-## Configuration
+<h2 id="configuracion">Configuración</h2>
 
-`src/main/resources/application.properties`:
+<p><code>src/main/resources/application.properties</code>:</p>
 
-```properties
-# Switch to PostgreSQL for production
+<pre><code class="language-properties"># Cambia a PostgreSQL para producción
 spring.datasource.url=jdbc:postgresql://localhost:5432/cybersend
 spring.datasource.username=postgres
 spring.datasource.password=your_password
 spring.datasource.driver-class-name=org.postgresql.Driver
 spring.jpa.hibernate.ddl-auto=update
 
-# Tune the dispatch interval (ms)
-# Default: 30000 (30 seconds)
-# For high-precision scheduling, lower to 5000
-```
+# Ajusta el intervalo de despacho (ms)
+# Por defecto: 30000 (30 segundos)
+# Para programación de alta precisión, reduce a 5000</code></pre>
 
-Add the PostgreSQL driver to `pom.xml` when switching:
+<p>Añade el controlador PostgreSQL a <code>pom.xml</code> al cambiar:</p>
 
-```xml
-<dependency>
-    <groupId>org.postgresql</groupId>
-    <artifactId>postgresql</artifactId>
-    <scope>runtime</scope>
-</dependency>
-```
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.postgresql&lt;/groupId&gt;
+    &lt;artifactId&gt;postgresql&lt;/artifactId&gt;
+    &lt;scope&gt;runtime&lt;/scope&gt;
+&lt;/dependency&gt;</code></pre>
 
----
+<hr>
 
-## API Reference
+<h2 id="referencia-api">Referencia API</h2>
 
-All endpoints are under `/api`. CORS is open (`*`) by default — lock it down for production.
+<p>Todos los endpoints están bajo <code>/api</code>. CORS está abierto (<code>*</code>) por defecto — restríngelo para producción.</p>
 
-### Messages
+<h3>Mensajes</h3>
 
-| Method | Endpoint | Body | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/messages` | — | Returns all messages, ordered by `scheduled_at DESC` |
-| `POST` | `/api/messages` | `ScheduledMessage JSON` | Creates a scheduled message |
-| `POST` | `/api/messages/{id}/send-now` | — | Overrides schedule and dispatches immediately |
-| `POST` | `/api/messages/{id}/cancel` | — | Marks as `CANCELLED`, skipped by dispatcher |
-| `DELETE` | `/api/messages/{id}` | — | Cancels and removes |
+<table>
+    <thead>
+        <tr><th>Método</th><th>Endpoint</th><th>Cuerpo</th><th>Descripción</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>GET</code></td><td><code>/api/messages</code></td><td>—</td><td>Devuelve todos los mensajes, ordenados por <code>scheduled_at DESC</code></td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/messages</code></td><td><code>ScheduledMessage JSON</code></td><td>Crea un mensaje programado</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/messages/{id}/send-now</code></td><td>—</td><td>Anula la programación y despacha inmediatamente</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/messages/{id}/cancel</code></td><td>—</td><td>Marca como <code>CANCELLED</code>, omitido por el despachador</td></tr>
+        <tr><td><code>DELETE</code></td><td><code>/api/messages/{id}</code></td><td>—</td><td>Cancela y elimina</td></tr>
+    </tbody>
+</table>
 
-**POST /api/messages — request body:**
+<p><strong>POST /api/messages — cuerpo de la solicitud:</strong></p>
 
-```json
-{
+<pre><code class="language-json">{
   "phoneNumber": "34612345678",
   "contactName": "Ana García",
   "messageContent": "Hola, recuerda la reunión a las 10.",
   "scheduledAt": "2025-06-15T09:55:00",
   "recurrence": "NONE",
   "timezone": "Europe/Madrid"
-}
-```
+}</code></pre>
 
-`recurrence` accepts: `NONE`, `DAILY`, `WEEKLY`, `MONTHLY`.
+<p><code>recurrence</code> acepta: <code>NONE</code>, <code>DAILY</code>, <code>WEEKLY</code>, <code>MONTHLY</code>.</p>
+<p><code>status</code> se gestiona del lado del servidor: <code>PENDING → SENDING → SENT | FAILED</code>.</p>
 
-`status` is managed server-side: `PENDING → SENDING → SENT | FAILED`.
+<h3>Sesión</h3>
 
-### Session
+<table>
+    <thead>
+        <tr><th>Método</th><th>Endpoint</th><th>Cuerpo</th><th>Descripción</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>GET</code></td><td><code>/api/session</code></td><td>—</td><td>Estado actual de la sesión</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/session/connect</code></td><td>—</td><td>Genera QR, estado → <code>QR_PENDING</code></td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/session/confirm</code></td><td><code>{ "phoneNumber": "346..." }</code></td><td>Confirma escaneo, estado → <code>CONNECTED</code></td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/session/disconnect</code></td><td>—</td><td>Termina la sesión</td></tr>
+    </tbody>
+</table>
 
-| Method | Endpoint | Body | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/session` | — | Current session status |
-| `POST` | `/api/session/connect` | — | Generates QR, status → `QR_PENDING` |
-| `POST` | `/api/session/confirm` | `{ "phoneNumber": "346..." }` | Confirms scan, status → `CONNECTED` |
-| `POST` | `/api/session/disconnect` | — | Terminates session |
+<h3>Utilidades</h3>
 
-### Utilities
+<table>
+    <thead>
+        <tr><th>Método</th><th>Endpoint</th><th>Descripción</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>GET</code></td><td><code>/api/stats</code></td><td>Conteos por estado (<code>total</code>, <code>pending</code>, <code>sent</code>, <code>failed</code>)</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/health</code></td><td>Verificación de estado (<code>{ status: "ONLINE", time: "..." }</code>)</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/server-time</code></td><td>Hora del servidor + zona horaria + zonas IANA disponibles</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/wa-link?phone=346...&amp;message=Hola</code></td><td>Genera un enlace profundo <code>wa.me</code></td></tr>
+    </tbody>
+</table>
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/stats` | Counts by status (`total`, `pending`, `sent`, `failed`) |
-| `GET` | `/api/health` | Health check (`{ status: "ONLINE", time: "..." }`) |
-| `GET` | `/api/server-time` | Server time + timezone + available IANA zones |
-| `GET` | `/api/wa-link?phone=346...&message=Hola` | Generates a `wa.me` deep link |
+<h3>WebSocket</h3>
 
-### WebSocket
+<p>Conéctate a <code>ws://localhost:8080/ws</code> (SockJS + STOMP).</p>
+<p>Suscríbete a:</p>
+<ul>
+    <li><code>/topic/message-updates</code> — se activa en cada cambio de estado de mensaje</li>
+    <li><code>/topic/session-status</code> — se activa en conexión/desconexión/QR de sesión</li>
+</ul>
 
-Connect to `ws://localhost:8080/ws` (SockJS + STOMP).
+<hr>
 
-Subscribe to:
-- `/topic/message-updates` — fires on every message status change
-- `/topic/session-status` — fires on session connect/disconnect/QR
+<h2 id="ciclo-vida-mensaje">Ciclo de Vida del Mensaje</h2>
 
----
-
-## Message Lifecycle
-
-```
-PENDING ──── dispatcher picks up ──▶ SENDING ──── success ──▶ SENT
+<pre class="ascii">PENDING ──── el despachador recoge ──▶ SENDING ──── éxito ──▶ SENT
                                          │
-                                         └── failure ──▶ FAILED
-                                         └── no session ──▶ PENDING (wa.me fallback link emitted)
+                                         └── fallo ──▶ FAILED
+                                         └── sin sesión ──▶ PENDING (se emite enlace respaldo wa.me)
 
-PENDING ──── user cancels ──▶ CANCELLED
-```
+PENDING ──── usuario cancela ──▶ CANCELLED</pre>
 
-Recurring messages: when a `SENT` message has `recurrence != NONE`, the dispatcher clones it with `scheduled_at` bumped by the recurrence interval. The clone starts as `PENDING`.
+<p>Mensajes recurrentes: cuando un mensaje <code>SENT</code> tiene <code>recurrence != NONE</code>, el despachador lo clona con <code>scheduled_at</code> incrementado por el intervalo de recurrencia. El clon comienza como <code>PENDING</code>.</p>
 
----
+<hr>
 
-## Keyboard Shortcuts
+<h2 id="atajos-teclado">Atajos de Teclado</h2>
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl + Enter` | Schedule message |
-| `Ctrl + Shift + Enter` | Send immediately |
-| `Escape` | Close any open modal |
+<table>
+    <thead>
+        <tr><th>Atajo</th><th>Acción</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>Ctrl + Enter</code></td><td>Programar mensaje</td></tr>
+        <tr><td><code>Ctrl + Shift + Enter</code></td><td>Enviar inmediatamente</td></tr>
+        <tr><td><code>Escape</code></td><td>Cerrar cualquier modal abierto</td></tr>
+    </tbody>
+</table>
 
----
+<hr>
 
-## Features
+<h2 id="caracteristicas">Características</h2>
 
-- Schedule messages to any WhatsApp number with exact date, time and timezone
-- Recurrence: daily, weekly, monthly (auto-clones after dispatch)
-- Real-time status updates via WebSocket — no polling
-- Browser geolocation for timezone auto-detection
-- Backend-optional: the HTML file is fully self-contained and works offline
-- H2 embedded database with file persistence (no data loss on restart)
-- Fallback `wa.me` links always available regardless of session state
-- QR-based WhatsApp Web authentication flow (simulated in demo mode)
-- Full CORS support for cross-origin frontend/backend deployments
-- H2 console available at `/h2-console` in dev mode
+<ul>
+    <li>Programa mensajes a cualquier número de WhatsApp con fecha, hora y zona horaria exactas</li>
+    <li>Recurrencia: diaria, semanal, mensual (auto-clona después del despacho)</li>
+    <li>Actualizaciones de estado en tiempo real vía WebSocket — sin polling</li>
+    <li>Geolocalización del navegador para autodetección de zona horaria</li>
+    <li>Backend opcional: el archivo HTML es completamente autocontenido y funciona sin conexión</li>
+    <li>Base de datos embebida H2 con persistencia en archivo (sin pérdida de datos al reiniciar)</li>
+    <li>Enlaces de respaldo <code>wa.me</code> siempre disponibles independientemente del estado de la sesión</li>
+    <li>Flujo de autenticación de WhatsApp Web basado en QR (simulado en modo demo)</li>
+    <li>Soporte CORS completo para despliegues frontend/backend de origen cruzado</li>
+    <li>Consola H2 disponible en <code>/h2-console</code> en modo desarrollo</li>
+</ul>
 
----
+<hr>
 
-## Notes on WhatsApp Automation
+<h2 id="notas-automatizacion">Notas sobre Automatización de WhatsApp</h2>
 
-WhatsApp's Terms of Service prohibit unauthorized automation of personal accounts. The `wa.me` deep link approach is fully compliant — it just pre-fills the message and requires the user to press Send. Full automation via `whatsapp-web.js` operates in a grey area for personal use; for production/commercial use, the official Business API is the correct path.
+<p>Los Términos de Servicio de WhatsApp prohíben la automatización no autorizada de cuentas personales. El enfoque de enlace profundo <code>wa.me</code> es totalmente conforme — solo pre-rellena el mensaje y requiere que el usuario presione Enviar. La automatización completa vía <code>whatsapp-web.js</code> opera en un área gris para uso personal; para uso comercial/de producción, la API Business oficial es el camino correcto.</p>
 
-This project is intended for personal productivity and developer tooling. Use responsibly.
+<p>Este proyecto está destinado a productividad personal y herramientas para desarrolladores. Úsalo responsablemente.</p>
 
----
+<hr>
 
-<div align="center">
-<sub>Built with Spring Boot 3.2 · Java 17 · Vanilla JS · No npm install required for the frontend</sub>
+<div class="center">
+    <sub>Construido con Spring Boot 3.2 · Java 17 · Vanilla JS · Sin instalación npm requerida para el frontend</sub>
 </div>
+
+</body>
+</html>
